@@ -61,10 +61,6 @@ export function getLineHeightOfFirstLine(element: HTMLElement): number {
   const fontSize = Number.parseFloat(realStyle.fontSize);
   const lineHeight = realStyle.lineHeight;
 
-  console.log({
-    fontSize, lineHeight
-  })
-
   if (lineHeight === 'normal') {
     return fontSize * 1.2;
   }

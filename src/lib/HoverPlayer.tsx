@@ -1,5 +1,10 @@
 // This is a simple play button SVG that you can use in your hover player
-const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
+import { useState } from 'react';
+import type { SVGProps, CSSProperties } from 'react';
+import { useHoveredParagraphCoordinate } from './hook';
+import { getTopLevelReadableElementsOnPage } from './parser';
+
+const PlayButton = (props: SVGProps<SVGSVGElement>) => (
   // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
 <svg
     id="play-icon"
@@ -24,14 +29,35 @@ const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
 
 /**
  * **TBD:**
- * Implement a hover player that appears next to the paragraph when the user hovers over it
- * The hover player should contain a play button that when clicked, should play the text of the paragraph
- * This component should make use of the useHoveredParagraphCoordinate hook to get information about the hovered paragraph
+ * Implement a hover player that appears next to the paragraph when the user hovers over it.
+ * The hover player should contain a play button that when clicked, should play the text of the paragraph.
+ * This component makes use of the useHoveredParagraphCoordinate hook to get information about the hovered paragraph.
  */
 export default function HoverPlayer() {
+  const elements = getTopLevelReadableElementsOnPage();
+  const hoveredInfo = useHoveredParagraphCoordinate(elements as HTMLElement[]);
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  
+  // Keep component mounted if either paragraph is hovered or button is hovered
+  if (!hoveredInfo?.element && !isButtonHovered) return null;
+  
+  const rect = hoveredInfo?.element?.getBoundingClientRect() || { top: 0, left: 0 };
+
+  const style: CSSProperties = {
+    position: 'absolute',
+    top: rect.top + window.scrollY,
+    left: rect.left + window.scrollX - 24, // Adjust offset as needed for left placement
+    pointerEvents: 'auto',
+    zIndex: 1000,
+  };
+
   return (
-    <>
-     {"=>"}
-    </>
-  )
+    <div 
+      style={style}
+      onMouseEnter={() => setIsButtonHovered(true)}
+      onMouseLeave={() => setIsButtonHovered(false)}
+    >
+      <PlayButton />
+    </div>
+  );
 }
