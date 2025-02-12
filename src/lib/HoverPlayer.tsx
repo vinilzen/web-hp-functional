@@ -1,12 +1,12 @@
 // This is a simple play button SVG that you can use in your hover player
-import { useState } from 'react';
-import type { SVGProps, CSSProperties } from 'react';
-import { useHoveredParagraphCoordinate } from './hook';
-import { getTopLevelReadableElementsOnPage } from './parser';
+import { type SVGProps, type CSSProperties, useState, useRef, useEffect, useCallback } from "react";
+import { HoveredElementInfo, useHoveredParagraphCoordinate } from "./hook";
+import { getTopLevelReadableElementsOnPage } from "./parser";
+import { speechify } from "./play";
 
 const PlayButton = (props: SVGProps<SVGSVGElement>) => (
   // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
-<svg
+  <svg
     id="play-icon"
     width="24"
     height="24"
@@ -34,30 +34,64 @@ const PlayButton = (props: SVGProps<SVGSVGElement>) => (
  * This component makes use of the useHoveredParagraphCoordinate hook to get information about the hovered paragraph.
  */
 export default function HoverPlayer() {
+  const [showPlayButton, setShowPlayButton] = useState(false);
+  const [hoveredElement, setHoveredElement] = useState<HoveredElementInfo | null>(null);
+  const [selectedElement, setSelectedElement] = useState<HoveredElementInfo | null>(null);
+  const hideTimeout = useRef<NodeJS.Timeout | null>(null);
   const elements = getTopLevelReadableElementsOnPage();
   const hoveredInfo = useHoveredParagraphCoordinate(elements as HTMLElement[]);
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
-  
-  // Keep component mounted if either paragraph is hovered or button is hovered
-  if (!hoveredInfo?.element && !isButtonHovered) return null;
-  
-  const rect = hoveredInfo?.element?.getBoundingClientRect() || { top: 0, left: 0 };
+
+  useEffect(() => {
+    if (selectedElement) {
+      speechify(selectedElement.element);
+    }
+  }, [selectedElement])
+
+  useEffect(() => {
+    if (showPlayButton === false && hoveredInfo?.element && hoveredInfo !== hoveredElement) {
+      console.log('show')
+      if (showPlayButton === false) {
+        setShowPlayButton(true);
+      }
+      if (hoveredInfo !== hoveredElement) {
+        setHoveredElement(hoveredInfo)
+      }
+    } else {
+      hideTimeout.current = setTimeout(() => {
+        setShowPlayButton(false);
+        setHoveredElement(null)
+      }, 1000);
+    }
+    return () => clearTimeout(hideTimeout.current!);
+  }, [showPlayButton, hoveredInfo, hoveredElement]);
+
+  const onSelect = useCallback(() => {
+    setSelectedElement(hoveredElement);
+    // alert(`play sound for text: ${hoveredElement?.element.innerText.trim()}`)
+  }, [hoveredElement])
 
   const style: CSSProperties = {
-    position: 'absolute',
-    top: rect.top + window.scrollY,
-    left: rect.left + window.scrollX - 24, // Adjust offset as needed for left placement
-    pointerEvents: 'auto',
-    zIndex: 1000,
+    position: "absolute",
+    top: hoveredElement?.top,
+    left: (hoveredElement?.left || 0) - 24,
+    pointerEvents: "auto",
+    zIndex: 700,
   };
 
   return (
-    <div 
-      style={style}
-      onMouseEnter={() => setIsButtonHovered(true)}
-      onMouseLeave={() => setIsButtonHovered(false)}
-    >
-      <PlayButton />
-    </div>
+    <>
+      {hoveredElement && showPlayButton && (
+        <div
+          style={style}
+          onMouseEnter={() => {
+            clearTimeout(hideTimeout.current!);
+          }}
+          onClick={() => {
+            onSelect()
+          }}>
+          <PlayButton />
+        </div>
+      )}
+    </>
   );
 }
