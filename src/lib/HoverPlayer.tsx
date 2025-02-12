@@ -1,6 +1,7 @@
 // This is a simple play button SVG that you can use in your hover player
 const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
+  // biome-ignore lint/a11y/noSvgWithoutTitle: <explanation>
+<svg
     id="play-icon"
     width="24"
     height="24"
@@ -27,4 +28,10 @@ const PlayButton = (props: React.SVGProps<SVGSVGElement>) => (
  * The hover player should contain a play button that when clicked, should play the text of the paragraph
  * This component should make use of the useHoveredParagraphCoordinate hook to get information about the hovered paragraph
  */
-export default function HoverPlayer() {}
+export default function HoverPlayer() {
+  return (
+    <>
+     {"=>"}
+    </>
+  )
+}

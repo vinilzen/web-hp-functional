@@ -45,6 +45,8 @@ describe("isPointInBounds", () => {
     const div = testElement.querySelector("#container")! as HTMLDivElement;
     const pointInside = getPointInsideElement(div);
 
+    console.log({pointInside})
+
     expect(isPointInsideElement(pointInside, div)).toBe(true);
   });
 

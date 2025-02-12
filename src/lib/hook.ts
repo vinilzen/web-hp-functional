@@ -1,3 +1,5 @@
+import { useEffect, useMemo, useState } from "react";
+
 /**
  * Gets bounding boxes for an element. This is implemented for you
  */
@@ -22,13 +24,27 @@ export function getElementBounds(elem: HTMLElement) {
 export function isPointInsideElement(
   coordinate: { x: number; y: number },
   element: HTMLElement
-): boolean {}
+): boolean {
+  if (element) {
+    const rectangle = getElementBounds(element);
+    const isInside =
+      coordinate.x >= rectangle.x &&
+      coordinate.x <= (rectangle.x + rectangle.width) &&
+      coordinate.y >= rectangle.top &&
+      coordinate.y <= (rectangle.top + rectangle.height);
+
+    return isInside;
+  }
+  return false;
+}
 
 /**
  * **TBD:** Implement a function that returns the height of the first line of text in an element
  * We will later use this to size the HTML element that contains the hover player
  */
-export function getLineHeightOfFirstLine(element: HTMLElement): number {}
+export function getLineHeightOfFirstLine(element: HTMLElement): number {
+  
+}
 
 export type HoveredElementInfo = {
   element: HTMLElement;
@@ -45,4 +61,47 @@ export type HoveredElementInfo = {
  */
 export function useHoveredParagraphCoordinate(
   parsedElements: HTMLElement[]
-): HoveredElementInfo | null {}
+): HoveredElementInfo | null {
+  const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (parsedElements.length === 0) {
+      const eventListener = ({ clientX, clientY }: MouseEvent) => {
+        let hovered = null;
+        for (const element of parsedElements) {
+          const inside = isPointInsideElement({ x: clientX, y: clientY }, element)
+          if (inside) {
+            console.log(element.tagName, inside)
+            hovered = element;
+          }
+        }
+        setHoveredElement(hovered);
+      }
+
+      window.addEventListener('mousemove', eventListener)
+
+      return () => {
+        window.removeEventListener('mousemove', eventListener)
+      }
+    }
+  }, [parsedElements]);
+
+  const elementCoordinates = useMemo(() => {
+    if (hoveredElement) {
+      const coord = getElementBounds(hoveredElement);
+      return { top: coord.top, left: coord.left };
+    }
+    return { top: 0, left: 0 };
+  }, [hoveredElement])
+
+  if (parsedElements.length === 0 || hoveredElement === null) {
+    return null;
+  }
+
+  return {
+    element: hoveredElement,
+    left: elementCoordinates?.left || 0,
+    top: elementCoordinates?.top || 0,
+    heightOfFirstLine: 1
+  }
+}

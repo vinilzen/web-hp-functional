@@ -65,7 +65,6 @@ function isEmptyTextNode(element: Element): boolean {
 }
 
 const traverse = (element: Element, parentIsOnlyChild: boolean): Element[] => {
-  console.log('traverse input element', element.tagName)
   if (IGNORE_LIST.includes(element.tagName)) {
     return [] as Element[];
   }
