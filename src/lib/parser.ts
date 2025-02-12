@@ -44,27 +44,50 @@ const IGNORE_LIST = [
  *            </body>;
  *            In this case, #content-1 should not be considered as a top level readable element.
  */
-export function getTopLevelReadableElementsOnPage(): HTMLElement[] {
-  const bodyEl = document.querySelector('body');
+export function getTopLevelReadableElementsOnPage(): Element[] {
+  return traverse(document.body, false)
+}
 
-  const parentHasOnlyOneChild = (el) => {
-    el.parentNode.childNodes.length === 1;
+
+// function hasNonEmptyTextNode(element: Element): boolean {
+//   return Array.from(element.childNodes)
+//     .filter(node => node.nodeType === Node.TEXT_NODE && node.childNodes.length === 0)
+//     .some(textNode => {
+//       if (textNode.textContent) {
+//         return textNode.textContent?.trim().length > 0;
+//       }
+//       return false;
+//     });
+// }
+
+function isEmptyTextNode(element: Element): boolean {
+  return (element as HTMLElement).innerText.trim().length === 0
+}
+
+const traverse = (element: Element, parentIsOnlyChild: boolean): Element[] => {
+  console.log('traverse input element', element.tagName)
+  if (IGNORE_LIST.includes(element.tagName)) {
+    return [] as Element[];
   }
 
-  if (bodyEl) {
-    const notEmptyAllowedElements = [...bodyEl.childNodes.values()].filter((el: ChildNode) => {
-      return el.innerHTML && !IGNORE_LIST.includes(el.tagName) && !parentHasOnlyOneChild(el);
-    });
-
-    console.log({
-      notEmptyAllowedElements: notEmptyAllowedElements.map(el => ({
-        tagName: el.tagName,
-        innerText: el.innerHTML
-      }))
-    });
-
-    return notEmptyAllowedElements;
+  if (isEmptyTextNode(element)) {
+    return [] as Element[];
   }
 
-  return [];
+  let candidates: Element[] = [];
+  const allChildrenElements = [...element.children];
+  for (const child of allChildrenElements) {
+    const isOnlyChild = allChildrenElements.length === 1;
+    candidates = candidates.concat(traverse(child, isOnlyChild))
+  }
+
+  if (candidates.length > 0) {
+    return candidates;
+  }
+
+  if (parentIsOnlyChild) {
+    return [];
+  }
+
+  return [element] as Element[];
 }
