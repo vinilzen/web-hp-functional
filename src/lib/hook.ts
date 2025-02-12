@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Gets bounding boxes for an element. This is implemented for you
@@ -43,7 +43,41 @@ export function isPointInsideElement(
  * We will later use this to size the HTML element that contains the hover player
  */
 export function getLineHeightOfFirstLine(element: HTMLElement): number {
-  
+  // Determine the target element that contains the first line of text.
+  let target: HTMLElement = element;
+  for (let i = 0; i < element.childNodes.length; i++) {
+    const node = element.childNodes[i];
+    if (node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.trim().length > 0) {
+      target = element;
+      break;
+    }
+    if (node.nodeType === Node.ELEMENT_NODE && node.textContent && node.textContent.trim().length > 0) {
+      target = node as HTMLElement;
+      break;
+    }
+  }
+
+  const realStyle = window.getComputedStyle(target);
+  const fontSize = Number.parseFloat(realStyle.fontSize);
+  const lineHeight = realStyle.lineHeight;
+
+  console.log({
+    fontSize, lineHeight
+  })
+
+  if (lineHeight === 'normal') {
+    return fontSize * 1.2;
+  }
+
+  if (lineHeight.includes('px')) {
+    return Number.parseFloat(lineHeight);
+  }
+
+  const numericLineHeight = Number.parseFloat(lineHeight);
+  if (numericLineHeight === 1) {
+    return fontSize;
+  }
+  return fontSize * numericLineHeight;
 }
 
 export type HoveredElementInfo = {
@@ -65,13 +99,12 @@ export function useHoveredParagraphCoordinate(
   const [hoveredElement, setHoveredElement] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (parsedElements.length === 0) {
+    if (parsedElements.length !== 0) {
       const eventListener = ({ clientX, clientY }: MouseEvent) => {
         let hovered = null;
         for (const element of parsedElements) {
           const inside = isPointInsideElement({ x: clientX, y: clientY }, element)
           if (inside) {
-            console.log(element.tagName, inside)
             hovered = element;
           }
         }
@@ -86,22 +119,13 @@ export function useHoveredParagraphCoordinate(
     }
   }, [parsedElements]);
 
-  const elementCoordinates = useMemo(() => {
-    if (hoveredElement) {
-      const coord = getElementBounds(hoveredElement);
-      return { top: coord.top, left: coord.left };
-    }
-    return { top: 0, left: 0 };
-  }, [hoveredElement])
-
   if (parsedElements.length === 0 || hoveredElement === null) {
     return null;
   }
 
   return {
     element: hoveredElement,
-    left: elementCoordinates?.left || 0,
-    top: elementCoordinates?.top || 0,
-    heightOfFirstLine: 1
+    ...getElementBounds(hoveredElement),
+    heightOfFirstLine: getLineHeightOfFirstLine(hoveredElement)
   }
 }
